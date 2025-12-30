@@ -1,0 +1,173 @@
+-- Join Empty Servers in Popular Games
+local Games = {
+    2753915549, -- Blox Fruits
+    292439477,  -- Phantom Forces
+    142823291,  -- Murder Mystery 2
+    286090429,  -- Arsenal
+}
+
+local TeleportService = game:GetService("TeleportService")
+
+local function joinGame(gameId)
+    TeleportService:Teleport(gameId)
+end
+
+-- UI para seleccionar juego
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 300, 0, 200)
+Frame.Position = UDim2.new(0.5, -150, 0.5, -100)
+Frame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Frame.Parent = ScreenGui
+
+local Title = Instance.new("TextLabel")
+Title.Text = "SELECT GAME FOR EMPTY SERVER"
+Title.Size = UDim2.new(1, 0, 0.2, 0)
+Title.TextColor3 = Color3.new(1, 1, 1)
+Title.BackgroundTransparency = 1
+Title.Font = Enum.Font.SourceSansBold
+Title.Parent = Frame
+
+local yPos = 0.25
+for i, gameId in ipairs(Games) do
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(0.8, 0, 0.1, 0)
+    Button.Position = UDim2.new(0.1, 0, yPos, 0)
+    Button.Text = "Game "..i.." (ID: "..gameId..")"
+    Button.BackgroundColor3 = Color3.fromRGB(60, 60, 200)
+    Button.TextColor3 = Color3.new(1, 1, 1)
+    Button.Font = Enum.Font.SourceSans
+    Button.Parent = Frame
+    yPos = yPos + 0.12
+    
+    Button.MouseButton1Click:Connect(function()
+        joinGame(gameId)
+    end)
+end
+
+print("🎮 Selector de juegos cargado")-- Simple Server Joiner
+local PlaceID = game.PlaceId
+local function rejoin()
+    game:GetService("TeleportService"):Teleport(PlaceID)
+end
+
+local function checkAndLeave()
+    if #game.Players:GetPlayers() > 1 then
+        print("👥 Demasiados jugadores ("..#game.Players:GetPlayers().."), rejoin...")
+        rejoin()
+    else
+        print("✅ Servidor vacío/solo")
+    end
+end
+
+-- Check cada 10 segundos
+while wait(10) do
+    checkAndLeave()
+end-- Auto Join Empty Server (Automático)
+local TeleportService = game:GetService("TeleportService")
+local HttpService = game:GetService("HttpService")
+
+local function joinEmpty()
+    local placeId = game.PlaceId
+    
+    while true do
+        task.wait(5)
+        
+        local url = "https://games.roblox.com/v1/games/"..placeId.."/servers/Public?sortOrder=1&limit=100"
+        
+        local success, response = pcall(function()
+            return game:HttpGet(url)
+        end)
+        
+        if success then
+            local data = HttpService:JSONDecode(response)
+            
+            for _, server in ipairs(data.data) do
+                if server.playing <= 1 and server.id ~= game.JobId then
+                    print("🎯 Servidor con "..server.playing.." jugadores encontrado")
+                    print("🚀 Teleportando...")
+                    
+                    TeleportService:TeleportToPlaceInstance(placeId, server.id)
+                    task.wait(5)
+                    return
+                end
+            end
+        end
+    end
+end
+
+-- Verificar si hay jugadores
+if #game.Players:GetPlayers() > 1 then
+    print("👥 Hay otros jugadores, buscando servidor vacíos...")
+    joinEmpty()
+else
+    print("✅ Ya estás en servidor solo/semi-vacío")
+end-- Auto Join Empty Server - Delta Executor
+local HttpService = game:GetService("HttpService")
+local TeleportService = game:GetService("TeleportService")
+local Players = game:GetService("Players")
+
+local PlaceId = game.PlaceId
+local JobIdCache = {}
+
+-- Función para obtener servidores con 0 jugadores
+function findEmptyServer()
+    local url = "https://games.roblox.com/v1/games/"..PlaceId.."/servers/Public?sortOrder=1&limit=100"
+    
+    local success, response = pcall(function()
+        return game:HttpGet(url)
+    end)
+    
+    if success then
+        local data = HttpService:JSONDecode(response)
+        for _, server in ipairs(data.data) do
+            if server.playing == 0 and server.id ~= game.JobId then
+                print("✅ Servidor vacío encontrado: "..server.id)
+                return server.id
+            end
+        end
+    end
+    return nil
+end
+
+-- Función para unirse a servidor vacío
+function joinEmptyServer()
+    print("🔍 Buscando servidor vacío...")
+    local emptyJobId = findEmptyServer()
+    
+    if emptyJobId then
+        print("🚀 Uniéndose al servidor vacío...")
+        TeleportService:TeleportToPlaceInstance(PlaceId, emptyJobId, Players.LocalPlayer)
+    else
+        print("❌ No hay servidores vacíos, creando uno nuevo...")
+        TeleportService:Teleport(PlaceId)
+    end
+end
+
+-- UI para ejecutar
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+local Frame = Instance.new("Frame")
+Frame.Size = UDim2.new(0, 200, 0, 100)
+Frame.Position = UDim2.new(0.5, -100, 0.5, -50)
+Frame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+Frame.Parent = ScreenGui
+
+local Button = Instance.new("TextButton")
+Button.Size = UDim2.new(0.8, 0, 0.4, 0)
+Button.Position = UDim2.new(0.1, 0, 0.3, 0)
+Button.Text = "JOIN EMPTY SERVER"
+Button.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+Button.TextColor3 = Color3.new(1, 1, 1)
+Button.Font = Enum.Font.SourceSansBold
+Button.TextSize = 18
+Button.Parent = Frame
+
+Button.MouseButton1Click:Connect(function()
+    joinEmptyServer()
+end)
+
+print("📌 Script cargado. Presiona el botón verde para unirte a servidor vacío.")
